@@ -1,13 +1,11 @@
-type VercelRequest = {
-  method?: string;
-  url?: string;
-};
+import type { IncomingMessage, ServerResponse } from "node:http";
 
-type VercelResponse = {
+type VercelRequest = IncomingMessage;
+
+type VercelResponse = ServerResponse & {
   status: (code: number) => VercelResponse;
   setHeader: (name: string, value: string) => void;
   json: (body: unknown) => void;
-  end: () => void;
 };
 
 function sendStatus(req: VercelRequest, res: VercelResponse) {
