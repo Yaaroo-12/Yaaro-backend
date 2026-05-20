@@ -34,6 +34,7 @@ If your connection requires the CA certificate, save it outside git and point No
 ```bash
 export NODE_EXTRA_CA_CERTS=/absolute/path/to/aiven-ca.pem
 ```
+ss
 
 Then run Prisma:
 
