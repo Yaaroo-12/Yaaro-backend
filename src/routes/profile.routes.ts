@@ -738,10 +738,31 @@ export async function completeOnboarding(
       prisma.userLocation.findUnique({ where: { userId: currentUserId } }),
     ]);
 
-    if (!profile?.displayName || !profile.bio || photos < 2 || photos > 9 || !location) {
+    const errors: Record<string, string> = {};
+
+    if (!profile?.displayName?.trim()) {
+      errors.displayName = "Display name is required.";
+    }
+
+    if (!profile?.bio?.trim()) {
+      errors.bio = "Bio is required.";
+    }
+
+    if (photos < 2) {
+      errors.photos = "Add at least 2 photos.";
+    } else if (photos > 9) {
+      errors.photos = "You can upload a maximum of 9 photos.";
+    }
+
+    if (!location) {
+      errors.location = "Set your location before finishing.";
+    }
+
+    if (Object.keys(errors).length > 0) {
       return res.status(400).json({
         success: false,
-        message: "Complete your profile, add 2-9 photos, and set your location before finishing.",
+        message: "Please fix the highlighted fields.",
+        errors,
       });
     }
 
