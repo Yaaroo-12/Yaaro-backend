@@ -26,35 +26,43 @@ export async function requireAuth(
   res: Response,
   next: NextFunction,
 ) {
-  const token = getBearerToken(req);
+  try {
+    const token = getBearerToken(req);
 
-  if (!token || !env.jwtSecret) {
-    return res.status(401).json({ success: false, message: "Authentication is required." });
+    if (!token || !env.jwtSecret) {
+      return res.status(401).json({ success: false, message: "Authentication is required." });
+    }
+
+    const payload = verifyAccessToken(token, env.jwtSecret);
+
+    if (!payload) {
+      return res.status(401).json({ success: false, message: "Session expired." });
+    }
+
+    if (!/^\d+$/.test(payload.sub)) {
+      return res.status(401).json({ success: false, message: "Session expired." });
+    }
+
+    const userId = BigInt(payload.sub);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        status: true,
+        isActive: true,
+        isBanned: true,
+      },
+    });
+
+    if (!user || !user.isActive || user.isBanned || user.status !== "active") {
+      return res.status(401).json({ success: false, message: "Account is not active." });
+    }
+
+    req.auth = { userId: user.id, role: user.role, email: user.email };
+    return next();
+  } catch (error) {
+    return next(error);
   }
-
-  const payload = verifyAccessToken(token, env.jwtSecret);
-
-  if (!payload) {
-    return res.status(401).json({ success: false, message: "Session expired." });
-  }
-
-  const userId = BigInt(payload.sub);
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      email: true,
-      role: true,
-      status: true,
-      isActive: true,
-      isBanned: true,
-    },
-  });
-
-  if (!user || !user.isActive || user.isBanned || user.status !== "active") {
-    return res.status(401).json({ success: false, message: "Account is not active." });
-  }
-
-  req.auth = { userId: user.id, role: user.role, email: user.email };
-  return next();
 }

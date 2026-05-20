@@ -306,7 +306,7 @@ async function getProfilePayload(currentUserId: bigint) {
       registeredProfile: user.profile && {
         name: user.profile.nameEn,
         gender: user.profile.gender,
-        dateOfBirth: user.profile.dateOfBirth.toISOString().slice(0, 10),
+        dateOfBirth: user.profile.dateOfBirth?.toISOString().slice(0, 10) ?? null,
       },
     },
     profile: serializeProfile(profile),

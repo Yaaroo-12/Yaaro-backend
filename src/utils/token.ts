@@ -36,25 +36,33 @@ export function createAccessToken(
 }
 
 export function verifyAccessToken(token: string, secret: string) {
-  const [header, body, signature] = token.split(".");
+  try {
+    const [header, body, signature] = token.split(".");
 
-  if (!header || !body || !signature) {
+    if (!header || !body || !signature) {
+      return null;
+    }
+
+    const expectedSignature = createHmac("sha256", secret)
+      .update(`${header}.${body}`)
+      .digest("base64url");
+
+    if (signature !== expectedSignature) {
+      return null;
+    }
+
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as TokenPayload;
+
+    if (
+      typeof payload.sub !== "string" ||
+      typeof payload.exp !== "number" ||
+      payload.exp <= Math.floor(Date.now() / 1000)
+    ) {
+      return null;
+    }
+
+    return payload;
+  } catch {
     return null;
   }
-
-  const expectedSignature = createHmac("sha256", secret)
-    .update(`${header}.${body}`)
-    .digest("base64url");
-
-  if (signature !== expectedSignature) {
-    return null;
-  }
-
-  const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as TokenPayload;
-
-  if (payload.exp <= Math.floor(Date.now() / 1000)) {
-    return null;
-  }
-
-  return payload;
 }
